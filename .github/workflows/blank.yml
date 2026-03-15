@@ -1,0 +1,39 @@
+import hashlib
+import itertools
+import string
+import multiprocessing
+
+# The target hash
+TARGET_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
+CHARS = string.ascii_lowercase + string.digits
+
+def check_range(start_char, length):
+    """Worker function to check all combinations starting with a specific character."""
+    for combination in itertools.product(CHARS, repeat=length-1):
+        guess = start_char + ''.join(combination)
+        if hashlib.sha256(guess.encode()).hexdigest() == TARGET_HASH:
+            return guess
+    return None
+
+def main():
+    max_length = 8
+    print(f"Cracking with {multiprocessing.cpu_count()} cores...")
+
+    for length in range(1, max_length + 1):
+        print(f"Checking length: {length}")
+        
+        # Create a pool of workers
+        with multiprocessing.Pool() as pool:
+            # We map each starting character to a worker process
+            # e.g., one process handles 'a...', another handles 'b...', etc.
+            results = pool.starmap(check_range, [(c, length) for c in CHARS])
+            
+            # Check if any worker found the match
+            for result in results:
+                if result:
+                    print(f"\n[!] Success! Password is: {result}")
+                    return
+
+if __name__ == "__main__":
+    main()
+    
